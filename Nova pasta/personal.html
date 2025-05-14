@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal de Treino</title>
+    <link rel="stylesheet" href="personal.css">
+</head>
+
+<body>
+    <header id="cabeçalho">
+        <img src="img/allDay.png" alt="Logo All Day" class="logo" width="300" height="180">
+    </header>
+
+    <main>
+        <section class="Terminal">
+            <form id="form">
+                <input type="text" id="nome" placeholder="Nome da pessoa" required>
+                <select id="grupo">
+                    <option value="Peito">Peito</option>
+                    <option value="Costas">Costas</option>
+                    <option value="Pernas">Pernas</option>
+                    <option value="Biceps e Triceps">Biceps e Triceps</option>
+                    <option value="Ombros">Ombros</option>
+                    <option value="Glúteos">Glúteos</option>
+                    <option value="Zumba e Glúteos">Zumba Glúteos</option>
+                </select>
+                <button type="submit">Adicionar</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Pessoas treinando:</h2>
+
+            <!-- Filtro -->
+            <label for="filtroGrupo">Filtrar por grupo muscular:</label>
+            <select id="filtroGrupo">
+                <option value="Todos">Todos</option>
+                <option value="Peito">Peito</option>
+                <option value="Costas">Costas</option>
+                <option value="Pernas">Pernas</option>
+                <option value="Biceps e Triceps">Biceps e Triceps</option>
+                <option value="Ombros">Ombros</option>
+                <option value="Glúteos">Glúteos</option>
+                <option value="Zumba e Glúteos">Zumba Glúteos</option>
+            </select>
+
+            <ul id="lista-treinando">
+                <!-- Lista dinâmica -->
+            </ul>
+        </section>
+    </main>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAM0zYTiWEPj99qENP1RzKYlVZ3Go2CPL8",
+            authDomain: "guilherme-1318a.firebaseapp.com",
+            databaseURL: "https://guilherme-1318a-default-rtdb.firebaseio.com",
+            projectId: "guilherme-1318a",
+            storageBucket: "guilherme-1318a.firebasestorage.app",
+            messagingSenderId: "507536967301",
+            appId: "1:507536967301:web:bc18ee174c67749fd34bec",
+            measurementId: "G-4FBNNZEFG2"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const form = document.getElementById('form');
+        const nomeInput = document.getElementById('nome');
+        const grupoSelect = document.getElementById('grupo');
+        const lista = document.getElementById('lista-treinando');
+        const filtroGrupo = document.getElementById('filtroGrupo');
+
+        // Adiciona pessoa com horário de entrada
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const nome = nomeInput.value.trim();
+            const grupo = grupoSelect.value;
+
+            if (nome === "") return;
+
+            db.ref("pessoas").once("value", snapshot => {
+                let nomeExiste = false;
+
+                snapshot.forEach(child => {
+                    if (child.val().nome.toLowerCase() === nome.toLowerCase()) {
+                        nomeExiste = true;
+                    }
+                });
+
+                if (!nomeExiste) {
+                    const novaPessoaRef = db.ref("pessoas").push();
+                    const horario = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    novaPessoaRef.set({
+                        nome: nome,
+                        grupo: grupo,
+                        horario: horario
+                    });
+                } else {
+                    alert("Essa pessoa já está na lista.");
+                }
+
+                nomeInput.value = "";
+                grupoSelect.selectedIndex = 0;
+            });
+        });
+
+        // Atualiza a lista dinamicamente com filtro e ordenação
+        function atualizarLista(pessoas) {
+            lista.innerHTML = "";
+
+            pessoas
+                .filter(p => {
+                    return filtroGrupo.value === "Todos" || p.grupo === filtroGrupo.value;
+                })
+                .sort((a, b) => a.nome.localeCompare(b.nome))
+                .forEach(pessoa => {
+                    const li = document.createElement('li');
+                    li.textContent = `${pessoa.nome} - ${pessoa.grupo} - ${pessoa.horario}`;
+
+                    const botaoRemover = document.createElement('button');
+                    botaoRemover.textContent = "Remover";
+                    botaoRemover.addEventListener('click', () => {
+                        if (confirm("Tem certeza que deseja remover esta pessoa?")) {
+                            db.ref("pessoas/" + pessoa.key).remove();
+                        }
+                    });
+
+                    li.appendChild(botaoRemover);
+                    lista.appendChild(li);
+                });
+        }
+
+        // Escuta alterações no banco
+        let dadosPessoas = [];
+        db.ref("pessoas").on("value", snapshot => {
+            dadosPessoas = [];
+            snapshot.forEach(child => {
+                dadosPessoas.push({ key: child.key, ...child.val() });
+            });
+            atualizarLista(dadosPessoas);
+        });
+
+        // Atualiza a lista ao mudar o filtro
+        filtroGrupo.addEventListener('change', () => {
+            atualizarLista(dadosPessoas);
+        });
+    </script>
+
+    <a href="aluno.html" style="padding: 4px 20px; background-color: darkgray; color: black; text-decoration: none; border-radius: 5px;">Parte do Aluno</a>
+</body>
+
+</html>
+
