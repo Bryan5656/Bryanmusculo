@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trabalho</title>
+    <link rel="stylesheet" href="login.css" />
+    <script>
+        // Simulando um banco de dados simples usando localStorage
+        let usuarios = [];
+
+        // Salva o tipo de usuário selecionado (aluno ou professor)
+        let tipoSelecionado = "";
+
+        function selecionarTipo(tipo) {
+            tipoSelecionado = tipo;
+            alert("Tipo selecionado: " + tipoSelecionado);
+        }
+
+        // Função para cadastro
+        function cadastrar() {
+            const email = document.getElementById('cadastroEmail').value;
+            const senha = document.getElementById('cadastroSenha').value;
+
+            if (!email || !senha) {
+                alert("Preencha todos os campos para se cadastrar.");
+                return;
+            }
+
+            if (!tipoSelecionado) {
+                alert("Selecione se você é aluno ou professor.");
+                return;
+            }
+
+            const existe = usuarios.find(u => u.email === email);
+            if (existe) {
+                alert("Este email já está cadastrado.");
+                return;
+            }
+
+            usuarios.push({ email, senha, tipo: tipoSelecionado });
+            localStorage.setItem('usuarios', JSON.stringify(usuarios)); // salva no navegador
+            alert("Cadastro realizado com sucesso!");
+            console.log("Usuários cadastrados:", usuarios);
+        }
+
+        // Função para login
+        function logar() {
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+
+            if (!email || !senha) {
+                alert("Preencha todos os campos para logar.");
+                return;
+            }
+
+            const usuario = usuarios.find(u => u.email === email && u.senha === senha);
+
+            if (usuario) {
+                alert(`Login realizado com sucesso! Bem-vindo, ${usuario.tipo}.`);
+
+                if (usuario.tipo === 'aluno') {
+                    window.location.href = "aluno.html";
+                } else if (usuario.tipo === 'professor') {
+                    window.location.href = "professor.html";
+                }
+            } else {
+                alert("Email ou senha incorretos.");
+            }
+        }
+
+        // Carrega usuários do localStorage ao abrir a página
+        window.onload = function() {
+            const dadosSalvos = localStorage.getItem('usuarios');
+            if (dadosSalvos) {
+                usuarios = JSON.parse(dadosSalvos);
+            }
+        }
+    </script>
+</head>
+<body>
+    <header class="cabeça">
+        <nav>
+            <ul class="lista">
+                <li><a href="home.html" style="color: black; text-decoration: none;">Home</a></li>
+                <li>Sobre</li>
+                <li>
+                    <a href="contato.html" style="color: black; text-decoration: none;">
+                        <img src="img/what.png" alt="Whatsapp" style="height: 10px; width: 10px;"> Contato
+                    </a>
+                </li>
+                <li>(54) 98447-7414</li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="sala">
+        <div class="sala2">
+            <!-- Botões para selecionar tipo -->
+            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <button class="tipo" type="button" onclick="selecionarTipo('aluno')">
+                    <img src="img/iconpessoa.png" style="width: 20px; height: 15px;" alt="Aluno"> Aluno
+                </button>
+                <button class="tipo" type="button" onclick="selecionarTipo('professor')">
+                    <img src="img/iconpessoa.png" style="width: 20px; height: 15px;" alt="Professor"> Professor
+                </button>
+            </div>
+
+            <!-- Cadastro -->
+            <h1>Cadastro</h1>
+            <input type="email" id="cadastroEmail" placeholder="Email" required />
+            <input type="password" id="cadastroSenha" placeholder="Criar senha" required />
+            <button type="button" onclick="cadastrar()">Cadastrar</button>
+
+            <!-- Login -->
+            <h1>Login</h1>
+            <input type="email" id="loginEmail" placeholder="Email" required />
+            <input type="password" id="loginSenha" placeholder="Senha" required />
+            <button type="button" onclick="logar()">Logar</button>
+        </div>
+    </section>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAM0zYTiWEPj99qENP1RzKYlVZ3Go2CPL8",
+    authDomain: "guilherme-1318a.firebaseapp.com",
+    databaseURL: "https://guilherme-1318a-default-rtdb.firebaseio.com",
+    projectId: "guilherme-1318a",
+    storageBucket: "guilherme-1318a.appspot.com",
+    messagingSenderId: "507536967301",
+    appId: "1:507536967301:web:bc18ee174c67749fd34bec",
+    measurementId: "G-4FBNNZEFG2"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Seu código permanece igual
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const nome = nomeInput.value.trim();
+    const grupo = grupoSelect.value;
+
+    if (nome === "") return;
+
+    try {
+      const snapshot = await db.ref("pessoas").once("value");
+      let nomeExiste = false;
+      let contagemAtual = {};
+
+      snapshot.forEach(child => {
+        const p = child.val();
+        contagemAtual[p.grupo] = (contagemAtual[p.grupo] || 0) + 1;
+        if (p.nome.toLowerCase() === nome.toLowerCase()) nomeExiste = true;
+      });
+
+      if (nomeExiste) {
+        alert("Essa pessoa já está na lista.");
+        return;
+      }
+
+      if ((contagemAtual[grupo] || 0) >= limitePorGrupo[grupo]) {
+        alert(`O grupo "${grupo}" já atingiu o limite de ${limitePorGrupo[grupo]} pessoas.`);
+        return;
+      }
+
+      const novaPessoaRef = db.ref("pessoas").push();
+      const horario = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const entrada = Date.now();
+
+      await novaPessoaRef.set({
+        nome: nome,
+        grupo: grupo,
+        horario: horario,
+        entrada: entrada
+      });
+
+      const data = new Date().toLocaleDateString("pt-BR");
+      await db.ref(`historico/${data}`).push({ nome, grupo, horario, entrada });
+
+      nomeInput.value = "";
+      grupoSelect.selectedIndex = 0;
+
+      console.log("Pessoa adicionada com sucesso:", nome, grupo);
+
+    } catch (error) {
+      console.error("Erro ao adicionar pessoa:", error);
+      alert("Erro ao adicionar: " + error.message);
+    }
+  });
+</script>

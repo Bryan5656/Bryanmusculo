@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terminal de Treino</title>
+  <link rel="stylesheet" href="personal.css" />
+</head>
+
+<body>
+  <header id="cabeçalho">
+    <img src="img/allDay.png" alt="Logo All Day" class="logo" width="300" height="180" />
+  </header>
+
+  <main>
+    <section class="Terminal">
+      <form id="form">
+      
+      
+          <option value="Peito"></option>
+          <option value="Costas"></option>
+          <option value="Pernas"></option>
+          <option value="Biceps e Triceps"></option>
+          <option value="Ombros"></option>
+          <option value="Glúteos"></option>
+          <option value="Zumba e Glúteos"></option>
+        </select>
+        <!-- <button type="submit">Adicionar</button> -->
+      </form>
+    </section>
+
+    <section>
+      <h2>Pessoas treinando:</h2>
+
+      <label for="filtroGrupo">Filtrar por grupo muscular:</label>
+      <select id="filtroGrupo">
+        <option value="Todos">Todos</option>
+        <option value="Peito">Peito</option>
+        <option value="Costas">Costas</option>
+        <option value="Pernas">Pernas</option>
+        <option value="Biceps e Triceps">Biceps e Triceps</option>
+        <option value="Ombros">Ombros</option>
+        <option value="Glúteos">Glúteos</option>
+        <option value="Zumba e Glúteos">Zumba e Glúteos</option>
+      </select>
+
+      <p id="sugestao-treino"><strong>Sugestão de treino:</strong> Carregando...</p>
+
+      <ul id="lista-treinando">
+        <!-- Lista dinâmica -->
+      </ul>
+    </section>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAM0zYTiWEPj99qENP1RzKYlVZ3Go2CPL8",
+      authDomain: "guilherme-1318a.firebaseapp.com",
+      databaseURL: "https://guilherme-1318a-default-rtdb.firebaseio.com",
+      projectId: "guilherme-1318a",
+      storageBucket: "guilherme-1318a.firebasestorage.app",
+      messagingSenderId: "507536967301",
+      appId: "1:507536967301:web:bc18ee174c67749fd34bec",
+      measurementId: "G-4FBNNZEFG2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const form = document.getElementById('form');
+    const nomeInput = document.getElementById('nome');
+    const grupoSelect = document.getElementById('grupo');
+    const lista = document.getElementById('lista-treinando');
+    const filtroGrupo = document.getElementById('filtroGrupo');
+    const sugestao = document.getElementById('sugestao-treino');
+
+    const limitePorGrupo = {
+      "Peito": 5,
+      "Costas": 5,
+      "Pernas": 6,
+      "Biceps e Triceps": 5,
+      "Ombros": 4,
+      "Glúteos": 4,
+      "Zumba e Glúteos": 8
+    };
+
+    let dadosPessoas = [];
+
+    function calcularMinutos(timestamp) {
+      if (!timestamp) return "";
+      const agora = Date.now();
+      const diffMin = Math.floor((agora - timestamp) / 60000);
+      return `${diffMin} min de treino`;
+    }
+
+    // Desativa envio do formulário
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+    });
+
+    function atualizarLista(pessoas) {
+      lista.innerHTML = "";
+
+      pessoas
+        .filter(p => filtroGrupo.value === "Todos" || p.grupo === filtroGrupo.value)
+        .sort((a, b) => a.nome.localeCompare(b.nome))
+        .forEach(pessoa => {
+          const li = document.createElement('li');
+
+          const tempoTreino = pessoa.entrada ? ` (${calcularMinutos(pessoa.entrada)})` : '';
+          li.textContent = `${pessoa.nome} - ${pessoa.grupo} - ${pessoa.horario}${tempoTreino}`;
+
+          if (pessoa.entrada && (Date.now() - pessoa.entrada > 60 * 60000)) {
+            li.style.backgroundColor = "#ffd1d1";
+            li.title = "Mais de 60 minutos de treino";
+          }
+
+          lista.appendChild(li);
+        });
+    }
+
+    function sugerirGrupo(pessoas) {
+      const contagem = {};
+
+      pessoas.forEach(p => {
+        contagem[p.grupo] = (contagem[p.grupo] || 0) + 1;
+      });
+
+      const grupos = Object.keys(limitePorGrupo);
+
+      const grupoMenosCheio = grupos.reduce((menosCheio, grupo) => {
+        const atual = contagem[grupo] || 0;
+        const menor = contagem[menosCheio] || 0;
+        return atual < menor ? grupo : menosCheio;
+      });
+
+      sugestao.textContent = `Sugestão de treino: ${grupoMenosCheio} (menos pessoas no momento)`;
+    }
+
+    db.ref("pessoas").on("value", snapshot => {
+      dadosPessoas = [];
+      snapshot.forEach(child => {
+        dadosPessoas.push({ key: child.key, ...child.val() });
+      });
+      atualizarLista(dadosPessoas);
+      sugerirGrupo(dadosPessoas);
+    });
+
+    filtroGrupo.addEventListener('change', () => {
+      atualizarLista(dadosPessoas);
+    });
+  </script>
+
+
+</body>
+
+</html>
